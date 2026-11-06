@@ -223,7 +223,7 @@ jobs:
           APK="HubEnd-${VERSION}-debug.apk"
           cp "$(find dist -name app-debug.apk | head -1)" "$APK"
           SHA=$(sha256sum "$APK" | cut -d' ' -f1)
-          NOTES="APK de teste (debug) gerado e testado pelo CI no commit ${GITHUB_SHA}. Antes da primeira instalação desinstale a 0.1.0. SHA-256: ${SHA}"
+          NOTES="APK de teste (debug) gerado e testado pelo CI no commit ${GITHUB_SHA}. SHA-256: ${SHA}"
           if gh release view "v${VERSION}" >/dev/null 2>&1; then
             gh release edit "v${VERSION}" --notes "$NOTES" --prerelease
           else

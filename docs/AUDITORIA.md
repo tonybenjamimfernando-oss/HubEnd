@@ -93,6 +93,7 @@ Execução em Android real (emulador Android 11, API 30) — defeitos invisívei
 | 7 | **Consola nativa fechava no Feed**: o `%` da bateria era interpolado no padrão de `format()` (`UnknownFormatConversionException`) | `ui/screens/FeedScreen.kt:37` | `%%` |
 | 8 | Teste lia `src/main/res/raw/cve_database.json` do disco (só existe no computador de build) | `test/.../CveCatalogTest.kt` | Em ART lê o recurso empacotado `R.raw.cve_database` |
 | 9 | APKs de teste com chaves diferentes não instalavam por cima | `app/build.gradle` | Chave de depuração fixa `app/hubend-debug.keystore` (só testes) |
+| 10 | **Separadores da consola invisíveis no telemóvel (0.1.1)**: `NavigationBarItem` usa `weight(1f)`; dentro de um `Row` com `horizontalScroll` a largura é ilimitada e o peso dá largura 0 — a consola ficava presa no Feed. O teste antigo clicava nós de largura 0 e passava | `ui/HubApp.kt` | Barra própria com separadores de 76 dp; o teste exige cada separador visível, ≥ 48 dp e selecionado após o toque |
 
 Os testes HubOps passaram a correr também em ART (`:hubops:connectedDebugAndroidTest -PhubendDeviceTests`)
 e o módulo app tem testes de arranque e de navegação pelos 10 ecrãs da consola (`app/src/androidTest`).

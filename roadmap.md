@@ -9,7 +9,10 @@
 - [x] Publicar no repositório GitHub HubEnd (CI verde, APK como artefacto)
 - [x] Corrigir fecho ao abrir (APK 0.1.1) e testar em emulador Android: arranque, 171 testes HubOps, 10 ecrãs da consola
 - [x] CI: testes em emulador Android a cada envio
-- [ ] Confirmar o APK 0.1.1 num telemóvel real — requer o utilizador
+- [x] APK 0.1.1 abre num telemóvel real (Xiaomi, Android 11) — confirmado pelo utilizador
+- [x] Corrigir separadores invisíveis da consola nativa (0.1.2) e reforçar o teste
+- [ ] Confirmar navegação da 0.1.2 no telemóvel real — requer o utilizador
+- [x] Explicar ao utilizador como começar (GitHub, Terminal, WordPress)
 - [ ] Interface completa dentro do APK — requer publicar a app e definir APP_URL
 - [ ] Fase 1 — SQLite, biometria, notificações (shell); llama.cpp/JNI arm64-v8a
 - [ ] Fase 2 — SNSE neural (após Fase 1)
