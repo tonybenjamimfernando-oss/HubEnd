@@ -193,3 +193,41 @@ jobs:
           path: |
             android/app/build/reports/androidTests/**
             android/hubops/build/reports/androidTests/**
+
+  release:
+    # Download direto no telemóvel: o APK só é publicado depois de os testes JVM e em emulador passarem.
+    name: Publicar APK para download
+    if: github.event_name == 'push'
+    needs: [android, device]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Obter APK testado
+        uses: actions/download-artifact@v4
+        with:
+          name: hubend-android-${{ github.sha }}
+          path: dist
+
+      - name: Criar ou atualizar a versão no GitHub
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -n 's/.*versionName "\(.*\)".*/\1/p' android/app/build.gradle | head -1)
+          test -n "$VERSION"
+          APK="HubEnd-${VERSION}-debug.apk"
+          cp "$(find dist -name app-debug.apk | head -1)" "$APK"
+          SHA=$(sha256sum "$APK" | cut -d' ' -f1)
+          NOTES="APK de teste (debug) gerado e testado pelo CI no commit ${GITHUB_SHA}. Antes da primeira instalação desinstale a 0.1.0. SHA-256: ${SHA}"
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            gh release edit "v${VERSION}" --notes "$NOTES" --prerelease
+          else
+            gh release create "v${VERSION}" --target "$GITHUB_SHA" --title "HubEnd ${VERSION} (debug)" --notes "$NOTES" --prerelease
+          fi
+          gh release upload "v${VERSION}" "$APK" --clobber
+          echo "Download: https://github.com/${GITHUB_REPOSITORY}/releases/download/v${VERSION}/${APK}" >> "$GITHUB_STEP_SUMMARY"
