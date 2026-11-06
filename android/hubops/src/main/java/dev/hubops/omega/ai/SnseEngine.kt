@@ -141,7 +141,9 @@ class SymbolicPatchArbiter {
         Regex("Runtime\\.getRuntime\\(\\)\\.exec\\s*\\("), Regex("\\bProcessBuilder\\s*\\("),
         Regex("\\bDexClassLoader\\b"), Regex("\\b(InsecureTrustManager|TrustAllCerts)\\b"),
         Regex("\\beval\\s*\\("),
-        Regex("checkServerTrusted\\s*\\([^)]*\\)\\s*\\{\\s*}"),
+        // HubEnd: "}" escapado — o motor de regex ICU do Android rejeita "}" literal sem escape
+        // (a JVM aceita), o que fazia a aplicação fechar no arranque.
+        Regex("checkServerTrusted\\s*\\([^)]*\\)\\s*\\{\\s*\\}"),
     )
 
     fun arbitrate(outputs: List<ShardOutput>, originalCode: String, finding: Finding? = null): Arbitration {

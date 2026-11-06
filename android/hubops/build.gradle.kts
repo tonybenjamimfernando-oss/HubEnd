@@ -23,10 +23,15 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        minSdk = 26
+        // HubEnd: os testes HubOps usam nomes com espaços (DEX 040, API 30+); só a execução
+        // em dispositivo (-PhubendDeviceTests) sobe o minSdk. O APK continua com minSdk 26.
+        minSdk = if (providers.gradleProperty("hubendDeviceTests").isPresent) 30 else 26
         buildConfigField("String", "OMEGA_RELEASE_PUBLIC_KEY_B64", "\"$omegaReleasePublicKey\"")
         buildConfigField("String", "HUBOPS_VERSION", "\"1.29.0\"")
         consumerProguardFiles("proguard-rules.pro")
+        // HubEnd: os mesmos testes HubOps também correm em ART (dispositivo/emulador),
+        // onde o motor de regex é ICU e o comportamento difere da JVM.
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -44,6 +49,9 @@ android {
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
+    }
+    sourceSets {
+        getByName("androidTest").java.srcDirs("src/test/java", "src/androidTest/java")
     }
 }
 
@@ -75,4 +83,6 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }

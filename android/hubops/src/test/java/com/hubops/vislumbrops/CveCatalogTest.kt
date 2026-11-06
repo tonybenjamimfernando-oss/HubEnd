@@ -15,9 +15,22 @@ import java.io.File
 class CveCatalogTest {
 
     private val shipped: List<CveEntry> by lazy {
-        val parsed = CveCatalog.parse(File("src/main/res/raw/cve_database.json").readText())
+        val parsed = CveCatalog.parse(shippedJson())
         assertTrue("entradas rejeitadas: ${parsed.rejected}", parsed.rejected.isEmpty())
         parsed.entries
+    }
+
+    /**
+     * HubEnd: na JVM lê o ficheiro do código-fonte; em ART (teste no dispositivo) lê o mesmo
+     * recurso empacotado R.raw.cve_database, que é o que a aplicação usa em produção.
+     */
+    private fun shippedJson(): String {
+        val source = File("src/main/res/raw/cve_database.json")
+        if (source.isFile) return source.readText()
+        val registry = Class.forName("androidx.test.platform.app.InstrumentationRegistry")
+        val instrumentation = registry.getMethod("getInstrumentation").invoke(null) as android.app.Instrumentation
+        return instrumentation.targetContext.resources.openRawResource(dev.hubops.R.raw.cve_database)
+            .bufferedReader().use { it.readText() }
     }
 
     private fun entry(cve: String, version: String) =

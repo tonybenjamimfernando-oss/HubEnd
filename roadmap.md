@@ -7,7 +7,9 @@
 - [x] Fase 0 — CI GitHub Actions: testes, lint, APK debug, proveniência
 - [x] Fase 0 — Compilado e testado localmente (171 + 5 testes, lint, assembleDebug)
 - [x] Publicar no repositório GitHub HubEnd (CI verde, APK como artefacto)
-- [ ] Fase 0 — Instalar o APK num telemóvel e confirmar abertura/navegação — requer o utilizador
+- [x] Corrigir fecho ao abrir (APK 0.1.1) e testar em emulador Android: arranque, 171 testes HubOps, 10 ecrãs da consola
+- [x] CI: testes em emulador Android a cada envio
+- [ ] Confirmar o APK 0.1.1 num telemóvel real — requer o utilizador
 - [ ] Interface completa dentro do APK — requer publicar a app e definir APP_URL
 - [ ] Fase 1 — SQLite, biometria, notificações (shell); llama.cpp/JNI arm64-v8a
 - [ ] Fase 2 — SNSE neural (após Fase 1)

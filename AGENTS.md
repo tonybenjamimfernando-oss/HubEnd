@@ -40,3 +40,5 @@ use the editor.
 - Android build: one root Gradle (AGP 8.10.1, Kotlin 2.2.21, Gradle wrapper 8.11.1, Java 21, compileSdk 36, minSdk 26). `bunx cap sync android` must run before Gradle (it generates `capacitor-cordova-android-plugins`). Why: Capacitor 7 + Tree-sitter AAR constraints.
 - Brand assets are real files in `public/brand`, `public/icons` and Android mipmaps (not CDN pointers) and the logo is always shown on its own light seal. Why: the GitHub repo and APK must build standalone and preserve the logo identity.
 - Shared web services (eventBus, apiClient, store) come from HybridApp in `src/lib/core`. Why: reuse instead of duplication.
+- HubOps tests also run on ART (`:hubops:connectedDebugAndroidTest -PhubendDeviceTests`, which raises minSdk only for that run) and `:app` has launch/console androidTests; CI runs both on an API 30 emulator. Why: JVM tests missed Android-only crashes (ICU regex, format strings) that killed APK 0.1.0 on launch.
+- Debug APKs are signed with the committed `android/app/hubend-debug.keystore`. Why: each test build must install over the previous one; release signing stays secret.

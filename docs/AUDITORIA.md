@@ -85,6 +85,18 @@ Execução dos 171 testes HubOps (4 falhas reais, corrigidas):
 | `DespertarTest.androidBuildJobValidates…` | Teste esperava `apksigner verify` sem a aspa do caminho citado | Teste corrigido (o script estava certo) |
 | `ComponentFusion…` (2 testes) | Remoção da pasta raiz apagava `src/` dos caminhos | Só remove pastas envolventes, não `src`, `app`, `java`, `kotlin`, `res`, `lib(s)` |
 
+Execução em Android real (emulador Android 11, API 30) — defeitos invisíveis na JVM, corrigidos em 0.1.1:
+
+| # | Problema | Ficheiro | Correção |
+|---|---|---|---|
+| 6 | **APK 0.1.0 fechava ao abrir**: `PatternSyntaxException` no arranque — `}` sem escape na regra `checkServerTrusted…\{\s*}`; a JVM aceita, o ICU do Android rejeita | `omega/ai/SnseEngine.kt:144` (`SymbolicPatchArbiter`) | `\\}` |
+| 7 | **Consola nativa fechava no Feed**: o `%` da bateria era interpolado no padrão de `format()` (`UnknownFormatConversionException`) | `ui/screens/FeedScreen.kt:37` | `%%` |
+| 8 | Teste lia `src/main/res/raw/cve_database.json` do disco (só existe no computador de build) | `test/.../CveCatalogTest.kt` | Em ART lê o recurso empacotado `R.raw.cve_database` |
+| 9 | APKs de teste com chaves diferentes não instalavam por cima | `app/build.gradle` | Chave de depuração fixa `app/hubend-debug.keystore` (só testes) |
+
+Os testes HubOps passaram a correr também em ART (`:hubops:connectedDebugAndroidTest -PhubendDeviceTests`)
+e o módulo app tem testes de arranque e de navegação pelos 10 ecrãs da consola (`app/src/androidTest`).
+
 Riscos mantidos e documentados:
 
 - **Desbloqueio pago do Despertar** é um interruptor local (`TermuxBridge.kt:279-285`) → Fase 4 (Google Play Billing + validação no servidor).

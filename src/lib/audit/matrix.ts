@@ -43,6 +43,8 @@ export interface Issue {
 
 export const ISSUES: Issue[] = [
   { severity: "Alta", title: "HubOps 1.29.0 não compilava", detail: "5 erros Kotlin: Process.pid() inexistente em Android, escapes '\\\\n' inválidos e Button fora de item {} num LazyColumn.", resolution: "Corrigido no HubEnd sem remover funcionalidades." },
+  { severity: "Alta", title: "APK 0.1.0 fechava ao abrir", detail: "Uma regra de texto do SNSE com '}' sem escape é aceite pela JVM mas rejeitada pelo Android (ICU), e a aplicação fechava no arranque.", resolution: "Corrigido em 0.1.1; os 171 testes HubOps passam também num emulador Android 11." },
+  { severity: "Alta", title: "Consola nativa fechava no ecrã Feed", detail: "O '%' da bateria entrava no padrão de format() (UnknownFormatConversionException).", resolution: "Corrigido em 0.1.1; teste no emulador abre os 10 ecrãs da consola." },
   { severity: "Alta", title: "Desbloqueio pago do Despertar é um interruptor local", detail: "TermuxBridge.kt:279-285 devolve config.devUnlocked.", resolution: "Pendente: Google Play Billing com validação no servidor (Fase 4)." },
   { severity: "Alta", title: "Execução de comandos exposta a conteúdo web", detail: "A WebView pode carregar um endereço remoto.", resolution: "A ponte não expõe o terminal nem o Termux; ficam na consola nativa." },
   { severity: "Alta", title: "Ledger local sem assinatura", detail: "integration-ledger.log usa appendText e Base64.", resolution: "Planeado: encadear linhas por SHA-256 e assinar com GoPA." },
@@ -61,7 +63,7 @@ export interface Phase {
 
 export const PHASES: Phase[] = [
   { id: "A", title: "Auditoria", status: "concluída", criteria: ["Inventário dos dois projetos", "Matriz de integração", "Problemas identificados", "Arquitetura proposta"] },
-  { id: "0", title: "Aplicação Android funcional", status: "em curso", criteria: ["Gradle Wrapper 8.11.1", "testDebugUnitTest", "assembleDebug", "Instalação e navegação num dispositivo (requer o utilizador)"] },
+  { id: "0", title: "Aplicação Android funcional", status: "em curso", criteria: ["Gradle Wrapper 8.11.1", "testDebugUnitTest", "assembleDebug", "Arranque e 10 ecrãs da consola testados em emulador Android 11", "Confirmação num telemóvel real (requer o utilizador)"] },
   { id: "1", title: "Motor nativo e execução", status: "pendente", criteria: ["llama.cpp via CMake/JNI arm64-v8a", "Modelos em filesDir com SHA-256", "Inferência real em dispositivo"] },
   { id: "2", title: "Inteligência avançada", status: "pendente", criteria: ["Especialistas SNSE neurais", "Latência, RAM, precisão e recall medidos"] },
   { id: "3", title: "Serviços e ambiente de execução", status: "pendente", criteria: ["Termux RUN_COMMAND", "PRoot com GPL e rootfs externo"] },

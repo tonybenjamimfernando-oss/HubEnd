@@ -34,7 +34,9 @@ fun FeedScreen(vm: HubViewModel) {
                 val uptimeHours = d.uptimeMillis / 3_600_000.0
                 ItemCard(
                     title = "${d.model} \u00b7 Android ${d.androidRelease} (API ${d.sdk})",
-                    subtitle = "Bateria ${if (d.batteryPercent >= 0) "${d.batteryPercent}%" else "indisponível"}${if (d.batteryCharging) " · a carregar" else ""}\nArmazenamento livre %.1f / %.1f GB\nRAM disponível %.1f / %.1f GB\nTempo desde arranque %.1f h\nTermux: %s · Shizuku: %s".format(
+                    // HubEnd: "%%" — o "%" da bateria entrava no padrão de format() e fechava a consola
+                    // (UnknownFormatConversionException) sempre que o nível de bateria era conhecido.
+                    subtitle = "Bateria ${if (d.batteryPercent >= 0) "${d.batteryPercent}%%" else "indisponível"}${if (d.batteryCharging) " · a carregar" else ""}\nArmazenamento livre %.1f / %.1f GB\nRAM disponível %.1f / %.1f GB\nTempo desde arranque %.1f h\nTermux: %s · Shizuku: %s".format(
                         d.freeBytes / gb, d.totalBytes / gb,
                         d.availableRamBytes / gb, d.totalRamBytes / gb,
                         uptimeHours,
