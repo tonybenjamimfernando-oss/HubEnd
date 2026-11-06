@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>HubEnd</title>
+    <!--
+      Ecrã local do APK HubEnd (sem APP_URL). Funciona offline:
+      lê o estado real dos motores pela ponte HubEndEngines e abre a consola nativa HubOps.
+    -->
+    <style>
+      :root { --bg: #141915; --surface: #1b211c; --raised: #222a23; --border: #333d34; --fg: #e9eedf; --muted: #9aa592; --sage: #b7cb97; --ok: #8fd6a0; --warn: #e5c26b; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        padding: max(20px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom)); }
+      main { max-width: 520px; margin: 0 auto; }
+      .seal { width: 112px; height: 112px; background: #fdfdfd; border-radius: 22px; padding: 8px; margin: 8px auto 14px; display: block; }
+      .seal img { width: 100%; height: 100%; object-fit: contain; }
+      h1 { text-align: center; font-size: 24px; margin: 0; letter-spacing: -0.02em; }
+      h1 span { color: var(--sage); }
+      .sub { text-align: center; color: var(--muted); font-size: 13px; margin: 6px 0 20px; }
+      .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+      .eyebrow { font-family: ui-monospace, monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+      ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+      li { display: flex; justify-content: space-between; gap: 12px; background: var(--raised); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+      li b { font-family: ui-monospace, monospace; font-weight: 500; font-size: 12px; color: var(--muted); text-align: right; }
+      li b.ok { color: var(--ok); }
+      button { width: 100%; border: 0; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 600; background: var(--sage); color: #1d241b; margin-bottom: 12px; }
+      button:disabled { opacity: .5; }
+      p.note { color: var(--muted); font-size: 12px; line-height: 1.55; margin: 0; }
+      code { color: var(--sage); }
+      .err { color: var(--warn); font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="seal"><img src="icon.png" alt="HubEnd" /></div>
+      <h1>Hub<span>End</span></h1>
+      <p class="sub" id="version">A ligar aos motores…</p>
+
+      <button id="open" disabled>Abrir consola nativa HubOps</button>
+
+      <section class="panel">
+        <p class="eyebrow">Motores registados</p>
+        <ul id="engines"><li>A carregar…</li></ul>
+      </section>
+
+      <section class="panel">
+        <p class="eyebrow">Suite Omega · runtimes</p>
+        <ul id="omega"></ul>
+      </section>
+
+      <section class="panel">
+        <p class="eyebrow">Dispositivo</p>
+        <ul id="device"></ul>
+      </section>
+
+      <section class="panel">
+        <p class="note">
+          Este APK foi compilado sem o endereço da interface HubEnd. Os motores e a consola nativa funcionam na mesma.
+          Para a interface completa, publique a app, defina <code>APP_URL</code> no repositório e volte a compilar.
+        </p>
+      </section>
+    </main>
+    <script>
+      (function () {
+        var $ = function (id) { return document.getElementById(id); };
+        function row(label, value, ok) {
+          var li = document.createElement("li");
+          var s = document.createElement("span"); s.textContent = label;
+          var b = document.createElement("b"); b.textContent = value; if (ok) b.className = "ok";
+          li.appendChild(s); li.appendChild(b); return li;
+        }
+        function fill(id, rows) { var ul = $(id); ul.innerHTML = ""; rows.forEach(function (r) { ul.appendChild(r); }); }
+        function gb(n) { return (n / 1073741824).toFixed(1) + " GB"; }
+        var plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.HubEndEngines;
+        if (!plugin) {
+          $("version").innerHTML = '<span class="err">Ponte nativa indisponível (aberto fora do APK).</span>';
+          fill("engines", [row("Estado", "sem motor nativo")]);
+          return;
+        }
+        $("open").disabled = false;
+        $("open").addEventListener("click", function () {
+          plugin.openNativeConsole().catch(function (e) { alert(e.message || e); });
+        });
+        plugin.status().then(function (s) {
+          $("version").textContent = "HubOps " + s.hubopsVersion + " · app " + s.appVersion + " · contrato v" + s.contractVersion;
+          fill("engines", s.engines.map(function (e) { return row(e.displayName, e.capabilities.length + " capacidades", true); }));
+          var o = s.omega;
+          fill("omega", [
+            row("SNSE neural", o.snseNeuralOperational ? "operacional" : "não operacional", o.snseNeuralOperational),
+            row("Shards GGUF", String(o.snseShardFiles), o.snseShardFiles > 0),
+            row("llama.cpp", o.llamaRuntimeInstalled ? "instalado" : "ausente", o.llamaRuntimeInstalled),
+            row("Isolamento NSC (PRoot)", o.nscIsolationAvailable ? "disponível" : "indisponível", o.nscIsolationAvailable),
+            row("Chave de release", o.releaseKeyConfigured ? "configurada" : "ausente", o.releaseKeyConfigured)
+          ]);
+          var d = s.device;
+          fill("device", [
+            row("Modelo", d.model, true),
+            row("Android", d.androidRelease + " (API " + d.sdk + ")", true),
+            row("RAM livre", gb(d.availableRamBytes) + " / " + gb(d.totalRamBytes), true),
+            row("Termux", d.termuxInstalled ? "instalado" : "não instalado", d.termuxInstalled)
+          ]);
+        }).catch(function (e) {
+          $("version").innerHTML = "";
+          var span = document.createElement("span"); span.className = "err"; span.textContent = "Erro dos motores: " + (e.message || e);
+          $("version").appendChild(span);
+        });
+      })();
+    </script>
+  </body>
+</html>

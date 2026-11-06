@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Caminhos partilhados pelo FileProvider único do HubEnd (Capacitor + HubOps Despertar). -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- HubOps / Despertar: projetos gerados para partilha (ZIP). -->
+    <cache-path name="generated_projects" path="generated/" />
+    <!-- Capacitor: ficheiros temporários do shell. -->
+    <cache-path name="capacitor_cache" path="capacitor/" />
+</paths>

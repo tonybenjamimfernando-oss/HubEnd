@@ -1,0 +1,30 @@
+// HubEnd — build raiz Android.
+// Unifica o shell Capacitor 7 (herdado do HybridApp) com o módulo HubOps (Kotlin/Compose).
+// AGP 8.10.1 e Kotlin 2.2.21 são as versões já validadas pelo HubOps 1.29.0.
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.10.1'
+        classpath 'com.google.gms:google-services:4.4.2'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.21'
+        classpath 'org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.2.21'
+        classpath 'org.jetbrains.kotlin:kotlin-serialization:2.2.21'
+    }
+}
+
+apply from: "variables.gradle"
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
+}

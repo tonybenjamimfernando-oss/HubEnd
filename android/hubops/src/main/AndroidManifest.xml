@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  HubOps 1.29.0 como módulo de biblioteca do HubEnd.
+  Alterações face ao manifesto original (app):
+  - A MainActivity deixou de ser LAUNCHER: o ponto de entrada é o shell HubEnd (Capacitor).
+    A consola nativa HubOps continua completa e é aberta pela ponte HubEndEngines.
+  - O tema passou do <application> para a atividade, para não colidir com o tema do shell.
+  - O FileProvider é declarado uma única vez no módulo app (mesma autoridade
+    ${applicationId}.fileprovider usada pelo Despertar); os caminhos HubOps foram
+    juntos em app/src/main/res/xml/file_paths.xml.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
+
+    <!-- Permite apenas DETETAR (leitura) se estes pacotes estão instalados. -->
+    <queries>
+        <package android:name="com.termux" />
+        <package android:name="moe.shizuku.privileged.api" />
+    </queries>
+
+    <application
+        android:name=".HubOpsApplication"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="false"
+        android:networkSecurityConfig="@xml/network_security_config">
+        <service
+            android:name=".despertar.TermuxResultService"
+            android:exported="false" />
+        <activity
+            android:name=".ui.MainActivity"
+            android:label="HubOps"
+            android:theme="@style/Theme.HubOps"
+            android:exported="false" />
+    </application>
+</manifest>

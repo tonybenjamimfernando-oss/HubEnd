@@ -1,0 +1,26 @@
+services:
+  # Local test cluster only: root can read the 0600 development TLS key.
+  # Production deployments should use per-peer secrets and the Dockerfile's non-root user.
+  peer-1:
+    user: "0:0"
+    build: .
+    command: ["-listen", ":8443", "-peer-keys", "/run/config/peer-keys.json", "-api-token", "${GOPA_API_TOKEN:?set a 32+ char token}", "-tls-cert", "/run/tls/tls.crt", "-tls-key", "/run/tls/tls.key", "-tls-ca", "/run/tls/tls.crt", "-peers", "https://peer-2:8443,https://peer-3:8443", "-ledger", "/data/ledger.json"]
+    volumes: ["./config:/run/config:ro", "./tls:/run/tls:ro", "peer1:/data"]
+    ports: ["8443:8443"]
+    networks: [gopa]
+  peer-2:
+    user: "0:0"
+    build: .
+    command: ["-listen", ":8443", "-peer-keys", "/run/config/peer-keys.json", "-api-token", "${GOPA_API_TOKEN:?set a 32+ char token}", "-tls-cert", "/run/tls/tls.crt", "-tls-key", "/run/tls/tls.key", "-tls-ca", "/run/tls/tls.crt", "-peers", "https://peer-1:8443,https://peer-3:8443", "-ledger", "/data/ledger.json"]
+    volumes: ["./config:/run/config:ro", "./tls:/run/tls:ro", "peer2:/data"]
+    ports: ["8444:8443"]
+    networks: [gopa]
+  peer-3:
+    user: "0:0"
+    build: .
+    command: ["-listen", ":8443", "-peer-keys", "/run/config/peer-keys.json", "-api-token", "${GOPA_API_TOKEN:?set a 32+ char token}", "-tls-cert", "/run/tls/tls.crt", "-tls-key", "/run/tls/tls.key", "-tls-ca", "/run/tls/tls.crt", "-peers", "https://peer-1:8443,https://peer-2:8443", "-ledger", "/data/ledger.json"]
+    volumes: ["./config:/run/config:ro", "./tls:/run/tls:ro", "peer3:/data"]
+    ports: ["8445:8443"]
+    networks: [gopa]
+volumes: { peer1: {}, peer2: {}, peer3: {} }
+networks: { gopa: {} }
