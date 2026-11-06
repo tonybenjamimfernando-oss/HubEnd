@@ -63,6 +63,9 @@ jobs:
 
       - name: Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # O pacote legado "tools" (predefinição da action) já não existe no repositório da Google.
+          packages: "platform-tools"
 
       - name: Pacotes Android fixados
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
