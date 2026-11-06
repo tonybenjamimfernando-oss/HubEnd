@@ -11,8 +11,18 @@ data class AndroidProjectBlueprint(
     val packageName: String,
     val applicationId: String = packageName,
     val includeInternetPermission: Boolean = false,
+    val template: ProjectTemplate = ProjectTemplate.BASIC,
+    val startUrl: String = "",
 ) {
+    /** O modelo Web precisa sempre de Internet. */
+    val needsInternet: Boolean get() = includeInternetPermission || template == ProjectTemplate.WEB
+
     fun validate() {
+        if (template == ProjectTemplate.WEB) {
+            require(startUrl.matches(Regex("https://[A-Za-z0-9.-]+(:[0-9]{1,5})?(/[A-Za-z0-9._~:/?#@!$&'()*+,;=%-]*)?"))) {
+                "Endereço inválido. Use https://exemplo.com"
+            }
+        }
         require(name.matches(Regex("[A-Za-z][A-Za-z0-9 _-]{1,39}"))) {
             "O nome deve começar por uma letra e ter 2–40 caracteres."
         }
@@ -48,7 +58,7 @@ object AndroidProjectGenerator {
         val namespace = b.packageName
         val appId = b.applicationId
         val root = safeSlug(b.name)
-        val permissions = if (b.includeInternetPermission) "    <uses-permission android:name=\"android.permission.INTERNET\" />\n" else ""
+        val permissions = if (b.needsInternet) "    <uses-permission android:name=\"android.permission.INTERNET\" />\n" else ""
         return linkedMapOf(
             "settings.gradle.kts" to """pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
 dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
@@ -90,9 +100,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
+    testOptions { unitTests.isReturnDefaultValues = true }
 }
+
+kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.09.00"))
@@ -100,6 +112,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
+    testImplementation("junit:junit:4.13.2")
 }
 """,
             "app/src/main/AndroidManifest.xml" to """<?xml version="1.0" encoding="utf-8"?>
@@ -114,46 +127,7 @@ $permissions    <application android:allowBackup="false" android:label="${xmlEsc
     </application>
 </manifest>
 """,
-            "app/src/main/java/${namespace.replace('.', '/')}/MainActivity.kt" to """package $namespace
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent { StarterScreen() }
-    }
-}
-
-@Composable
-private fun StarterScreen() {
-    MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text("${xmlEscape(b.name)}", style = MaterialTheme.typography.headlineMedium)
-                Text("Projeto Android criado pelo HubOps Despertar")
-            }
-        }
-    }
-}
-""",
+            "app/src/main/java/${namespace.replace('.', '/')}/MainActivity.kt" to ProjectTemplates.mainActivity(b),
             "README.md" to """# ${b.name}
 
 Projeto Android nativo gerado pelo HubOps Despertar.
@@ -172,11 +146,19 @@ Projeto Android nativo gerado pelo HubOps Despertar.
 ### Compilar no Android com Termux
 O HubOps pode exportar este ZIP para `Download/HubOps/Projects` e solicitar a compilação pelo Termux. Requer JDK 17, Gradle 8.11.1–8.14.3, unzip e acesso ao armazenamento partilhado. O APK debug será copiado para `Download/HubOps/Builds`.
 
+Modelo: **${b.template.label}** — ${b.template.description}
+
+### Compilar no GitHub (sem computador)
+Envie esta pasta para um repositório GitHub. O ficheiro `.github/workflows/android.yml` corre os testes e gera o APK debug em cada envio (separador Actions → artefacto `apk-debug`).
+
 O projeto usa Kotlin, Jetpack Compose e Material 3. Não contém credenciais nem código de terceiros.
 
 Package: `$namespace`  
 Application ID: `$appId`
 """,
+            "app/src/main/java/${namespace.replace('.', '/')}/ItemCodec.kt" to ProjectTemplates.itemCodec(b),
+            "app/src/test/java/${namespace.replace('.', '/')}/ItemCodecTest.kt" to ProjectTemplates.itemCodecTest(b),
+            ".github/workflows/android.yml" to ProjectTemplates.githubWorkflow(),
             ".gitignore" to ".gradle/\nbuild/\nlocal.properties\n*.iml\n.idea/\n.DS_Store\n",
         )
     }

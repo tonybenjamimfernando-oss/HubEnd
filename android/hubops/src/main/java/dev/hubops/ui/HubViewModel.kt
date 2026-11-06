@@ -757,9 +757,18 @@ class HubViewModel(app: Application) : AndroidViewModel(app) {
         _notice.value = "ATTRIBUTIONS.md gravado no ramo $branch. Reveja e faça o merge quando quiser."
     }
 
-    fun generateAndroidProject(name: String, packageName: String, internet: Boolean) = launchOp(Source.DESPERTAR) {
+    fun generateAndroidProject(
+        name: String,
+        packageName: String,
+        internet: Boolean,
+        template: dev.hubops.despertar.project.ProjectTemplate = dev.hubops.despertar.project.ProjectTemplate.BASIC,
+        startUrl: String = "",
+    ) = launchOp(Source.DESPERTAR) {
         require(entitlement.isUnlocked()) { "O Despertar está bloqueado." }
-        val blueprint = AndroidProjectBlueprint(name.trim(), packageName.trim(), includeInternetPermission = internet)
+        val blueprint = AndroidProjectBlueprint(
+            name.trim(), packageName.trim(), includeInternetPermission = internet,
+            template = template, startUrl = startUrl.trim(),
+        )
         blueprint.validate()
         val outputDir = File(getApplication<Application>().cacheDir, "generated").apply {
             if (!exists() && !mkdirs()) error("Não foi possível criar a pasta temporária de exportação.")
@@ -777,7 +786,7 @@ class HubViewModel(app: Application) : AndroidViewModel(app) {
         _fusionReport.value = null
         _codeSimilarityReport.value = null
         _generatedProject.value = generated
-        _notice.value = "Projeto Android gerado: ${generated.name}. Partilhe o ZIP para o guardar." 
+        _notice.value = "Projeto \"${template.label}\" gerado: ${generated.name}. Partilhe o ZIP ou envie-o para o GitHub, que compila o APK sozinho."
     }
 
     /** Analisa localmente o ZIP gerado sem executar código nem extrair entradas no armazenamento. */

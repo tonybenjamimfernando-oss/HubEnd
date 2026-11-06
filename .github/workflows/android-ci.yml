@@ -128,6 +128,46 @@ jobs:
             android/app/build/reports/lint-results-debug.*
             build/provenance/**
 
+  forge:
+    # Prova real: os projetos gerados pelo Project Forge (Despertar) compilam, passam nos testes e dão APK.
+    name: Projetos gerados compilam
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools"
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "platforms;android-34" "build-tools;34.0.0"
+      - run: |
+          bun install --frozen-lockfile
+          bunx cap sync android
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - name: Gerar os 4 modelos
+        working-directory: android
+        env:
+          HUBEND_FORGE_OUT: ${{ github.workspace }}/forge
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :hubops:testDebugUnitTest --tests 'dev.hubops.ProjectTemplatesTest'
+      - name: Compilar e testar cada projeto gerado
+        shell: bash
+        run: |
+          set -euo pipefail
+          for z in forge/*.zip; do
+            d="forge/$(basename "$z" .zip)"; mkdir -p "$d"; unzip -q "$z" -d "$d"
+            (cd "$d"/*/ && gradle --no-daemon -q :app:testDebugUnitTest :app:assembleDebug)
+            test -s "$d"/*/app/build/outputs/apk/debug/app-debug.apk
+            echo "- $(basename "$z" .zip): APK $(du -h "$d"/*/app/build/outputs/apk/debug/app-debug.apk | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+          done
+
   device:
     # Testes em Android real (ART/ICU): apanham falhas que a JVM não mostra, como o fecho do 0.1.0.
     name: Testes em emulador Android
@@ -198,7 +238,7 @@ jobs:
     # Download direto no telemóvel: o APK só é publicado depois de os testes JVM e em emulador passarem.
     name: Publicar APK para download
     if: github.event_name == 'push'
-    needs: [android, device]
+    needs: [android, device, forge]
     runs-on: ubuntu-latest
     permissions:
       contents: write

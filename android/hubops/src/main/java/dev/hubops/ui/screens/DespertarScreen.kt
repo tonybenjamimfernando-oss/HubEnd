@@ -75,6 +75,8 @@ fun DespertarScreen(vm: HubViewModel) {
     var projectName by rememberSaveable { mutableStateOf("Minha Aplicacao") }
     var projectPackage by rememberSaveable { mutableStateOf("com.exemplo.minhaapp") }
     var projectInternet by rememberSaveable { mutableStateOf(false) }
+    var projectTemplate by rememberSaveable { mutableStateOf(dev.hubops.despertar.project.ProjectTemplate.BASIC) }
+    var projectUrl by rememberSaveable { mutableStateOf("https://") }
     val unlocked = vm.entitlement.isUnlocked()
 
     LazyColumn(
@@ -104,12 +106,27 @@ fun DespertarScreen(vm: HubViewModel) {
                 label = { Text("Package / Application ID") }, singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            Text("Tipo de aplicação:")
+            dev.hubops.despertar.project.ProjectTemplate.entries.forEach { t ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.RadioButton(selected = projectTemplate == t, onClick = { projectTemplate = t })
+                    Text("${t.label} — ${t.description}")
+                }
+            }
+            if (projectTemplate == dev.hubops.despertar.project.ProjectTemplate.WEB) {
+                OutlinedTextField(
+                    value = projectUrl, onValueChange = { projectUrl = it },
+                    label = { Text("Endereço do site (https://…)") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            Text("Cada projeto inclui testes e compilação automática no GitHub: envie a pasta para um repositório e o APK aparece em Actions.")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = projectInternet, onCheckedChange = { projectInternet = it })
                 Text("Adicionar permissão de Internet")
             }
             Button(
-                onClick = { vm.generateAndroidProject(projectName, projectPackage, projectInternet) },
+                onClick = { vm.generateAndroidProject(projectName, projectPackage, projectInternet, projectTemplate, projectUrl) },
                 enabled = !busy && unlocked && projectName.isNotBlank() && projectPackage.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Gerar projeto Android ZIP") }

@@ -13,6 +13,7 @@
 - [x] Corrigir separadores invisíveis da consola nativa (0.1.2) e reforçar o teste
 - [ ] Confirmar navegação da 0.1.2 no telemóvel real — requer o utilizador
 - [x] Explicar ao utilizador como começar (GitHub, Terminal, WordPress)
+- [x] Despertar: 4 tipos de app (ecrã inicial, notas, tarefas, site) com testes e compilação GitHub em cada projeto (0.1.3)
 - [ ] Interface completa dentro do APK — requer publicar a app e definir APP_URL
 - [ ] Fase 1 — SQLite, biometria, notificações (shell); llama.cpp/JNI arm64-v8a
 - [ ] Fase 2 — SNSE neural (após Fase 1)
