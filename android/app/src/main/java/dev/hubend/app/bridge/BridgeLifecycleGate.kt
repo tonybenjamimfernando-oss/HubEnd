@@ -55,10 +55,12 @@ class BridgeLifecycleGate<T : Any> {
         }
     }
 
-    /** ACTIVE -> CLOSING. Devolve as chamadas pendentes uma unica vez. */
+    /** ACTIVE -> CLOSING. Devolve as chamadas pendentes uma unica vez e retira-as do registo. */
     fun beginClosing(): List<T> {
         if (!stateRef.compareAndSet(State.ACTIVE, State.CLOSING)) return emptyList()
-        return pending.toList()
+        val snapshot = pending.toList()
+        pending.removeAll(snapshot.toSet())
+        return snapshot
     }
 
     /** Fecha definitivamente e devolve o que ainda estiver pendente. */
