@@ -389,6 +389,9 @@ class HubOpsOrchestrator(private val stateDirectory: File) {
         findings: Int,
     ) {
         require(sourceEngine != destinationEngine && verificationId.isNotBlank())
+        // Verificações externas só podem atravessar fluxos explicitamente declarados
+        // como EVIDENCE_ONLY. A escrita no ledger nunca concede autorização de mutação.
+        HubOpsEngineRegistry.requireFlow(sourceEngine, destinationEngine, EngineFlowMode.EVIDENCE_ONLY)
         require(artifactSha256.matches(Regex("[a-fA-F0-9]{64}")))
         require(reportSha256.matches(Regex("[a-fA-F0-9]{64}")))
         require(outcome in setOf("APPROVED", "REMEDIATION_REQUIRED", "REJECTED"))
