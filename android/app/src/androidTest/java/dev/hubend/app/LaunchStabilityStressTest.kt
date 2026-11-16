@@ -13,6 +13,7 @@ class LaunchStabilityStressTest {
     @Test
     fun launchMainActivityTwentyTimes() {
         repeat(20) { i ->
+            Log.i("STRESS", "iteration_$i: START")
             try {
                 ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                     assertEquals(Lifecycle.State.RESUMED, scenario.state)
