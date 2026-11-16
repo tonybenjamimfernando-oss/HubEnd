@@ -220,9 +220,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           working-directory: android
           script: |
-            chmod +x gradlew
-            ./gradlew --no-daemon :app:connectedDebugAndroidTest
-            ./gradlew --no-daemon :hubops:connectedDebugAndroidTest -PhubendDeviceTests
+            bash ../tools/ci/device-diagnostics.sh
 
       - name: Relatórios dos testes em emulador
         if: always()
@@ -233,6 +231,7 @@ jobs:
           path: |
             android/app/build/reports/androidTests/**
             android/hubops/build/reports/androidTests/**
+            build/device-diagnostics/**
 
   release:
     # Download direto no telemóvel: o APK só é publicado depois de os testes JVM e em emulador passarem.
