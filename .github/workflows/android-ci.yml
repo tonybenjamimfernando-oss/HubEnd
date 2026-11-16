@@ -222,7 +222,21 @@ jobs:
           script: |
             set -uo pipefail
             mkdir -p ../build/device-diagnostics
-            trap 'adb logcat -b all -d -v threadtime > ../build/device-diagnostics/emulator-logcat.txt 2>&1 || true; adb shell dumpsys activity activities > ../build/device-diagnostics/activity-state.txt 2>&1 || true; find app/build/outputs/androidTest-results/connected -type f -print > ../build/device-diagnostics/android-test-result-files.txt 2>&1 || true' EXIT
+            capture_diagnostics() {
+              adb logcat -b all -d -v threadtime > ../build/device-diagnostics/emulator-logcat.txt 2>&1 || true
+              adb logcat -b crash -d -v threadtime > ../build/device-diagnostics/crash-buffer.txt 2>&1 || true
+              adb logcat -b events -d -v threadtime | grep -iE 'am_crash|am_anr|am_kill' > ../build/device-diagnostics/crash-anr-kill-events.txt 2>&1 || true
+              adb shell ls -la /data/tombstones/ > ../build/device-diagnostics/tombstones-list.txt 2>&1 || true
+              adb shell 'cat /data/tombstones/tombstone_*' > ../build/device-diagnostics/tombstones-content.txt 2>&1 || true
+              adb shell dumpsys activity activities > ../build/device-diagnostics/activity-state.txt 2>&1 || true
+              adb shell 'dumpsys activity processes | grep -A 20 -i hubend' > ../build/device-diagnostics/hubend-process-state.txt 2>&1 || true
+              adb shell dumpsys meminfo dev.hubend.app > ../build/device-diagnostics/hubend-meminfo.txt 2>&1 || true
+              adb shell 'cat /proc/meminfo | head -n 30' > ../build/device-diagnostics/proc-meminfo-after.txt 2>&1 || true
+              find app/build/outputs/androidTest-results/connected -type f -print > ../build/device-diagnostics/android-test-result-files.txt 2>&1 || true
+              find hubops/build/outputs/androidTest-results/connected -type f -print > ../build/device-diagnostics/hubops-android-test-result-files.txt 2>&1 || true
+            }
+            adb shell 'cat /proc/meminfo | head -n 30' > ../build/device-diagnostics/proc-meminfo-before.txt 2>&1 || true
+            trap capture_diagnostics EXIT
             chmod +x gradlew
             ./gradlew --no-daemon --info :app:connectedDebugAndroidTest
             ./gradlew --no-daemon --info :hubops:connectedDebugAndroidTest -PhubendDeviceTests
