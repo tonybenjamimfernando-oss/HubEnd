@@ -152,3 +152,40 @@ docs/               Auditoria, validação, documentação HubOps e HybridApp, m
 | 2 — SNSE neural | Pendente (depende da Fase 1) |
 | 3 — Termux/PRoot | Pendente |
 | 4 — Billing | Pendente |
+
+## 6. Causa raiz do crash `JsReplyProxy.postMessage` (crash #18)
+
+**Estado:** identificada e corrigida na PR #13; `main` verde e release v0.1.4 publicada.
+
+Sequência observada no crash #18:
+
+```text
+Capacitor: App destroyed
+  -> WebView destroyed
+  -> JsReplyProxy.postMessage  (SIGSEGV)
+```
+
+O crash não começa num defeito do WebView nem do emulador. A Activity foi destruída (o Android
+pode fazê-lo em segundo plano, por mudança de configuração ou por pressão de memória) e, a partir
+desse instante, o WebView nativo e o seu `JavaBridge` já estavam libertados. A ponte HubEnd,
+porém, continuava a aceitar e a resolver trabalho vindo das WebViews: `onDestroy` apenas anulava
+referências e não fechava o estado. As chamadas pendentes resolviam-se depois de o objecto nativo
+deixar de existir, e `JsReplyProxy.postMessage` escrevia num `JavaBridge`/`WebView` já recolhido —
+daí o SIGSEGV, e não uma excepção Java que pudesse ser apanhada.
+
+O `BridgeLifecycleGate` (PR #13) fecha essa janela: ao entrar em `onDestroy` o portão passa a
+estado terminal, recusa trabalho novo, descarta callbacks tardios e rejeita todas as promessas
+pendentes com `UNAVAILABLE`, em vez de as deixar tocar em objectos nativos já libertados. A chamada
+deixa, portanto, de alcançar `JsReplyProxy.postMessage` depois da destruição.
+
+Consequências para a investigação:
+
+- O crash não era reproduzível sem destruir a Activity — daí parecer intermitente.
+- Não era causado pelo WebView 83, pelo GPU/`swiftshader` do emulador nem pelo arranque da
+  `MainActivity`; as PRs #3, #4, #6, #8, #9, #10 e #11 media o sintoma a jusante da raiz e foram
+  encerradas.
+- Regra para o futuro: qualquer chamada que atravesse a ponte tem de passar pelo portão de ciclo
+  de vida; trabalho novo depois de `onDestroy` é recusado, não adiado.
+
+Provas: PR #13 verde (compilação, 11 testes JVM incluindo 6 da guarda, emulador) e release
+v0.1.4 gerada a partir da `main`.
