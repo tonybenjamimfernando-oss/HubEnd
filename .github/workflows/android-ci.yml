@@ -210,10 +210,10 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
-      - name: Arranque, consola nativa e testes HubOps em Android 11
+      - name: Arranque, consola nativa e testes HubOps em Android 12 (API 33)
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
+          api-level: 33
           arch: x86_64
           target: default
           disable-animations: true
