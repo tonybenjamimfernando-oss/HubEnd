@@ -228,6 +228,8 @@ jobs:
             APP_TEST_STATUS=$?
             adb logcat -d -v threadtime | grep STRESS > ../build/device-diagnostics/stress-api33-logcat.txt 2>&1 || true
             cat ../build/device-diagnostics/stress-api33-logcat.txt
+            adb logcat -d -v threadtime | grep SHELL_STRESS > ../build/device-diagnostics/shellrunner-stress-logcat.txt 2>&1 || true
+            cat ../build/device-diagnostics/shellrunner-stress-logcat.txt
             ./gradlew --no-daemon :hubops:connectedDebugAndroidTest -PhubendDeviceTests
             HUBOPS_TEST_STATUS=$?
             exit $((APP_TEST_STATUS != 0 || HUBOPS_TEST_STATUS != 0))
