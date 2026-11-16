@@ -3,6 +3,16 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
 
+// HubEnd AR-11: assinatura de release a partir de variaveis de ambiente (CI) ou de propriedades
+// locais. A chave privada nunca entra no repositorio: sem configuracao, o build de release fica
+// sem assinatura e o workflow nao publica AAB/APK assinados.
+def hubendKeystorePath = System.getenv('HUBEND_KEYSTORE_PATH') ?: (project.findProperty('hubendKeystorePath')?.toString())
+def hubendKeystorePassword = System.getenv('HUBEND_KEYSTORE_PASSWORD') ?: (project.findProperty('hubendKeystorePassword')?.toString())
+def hubendKeyAlias = System.getenv('HUBEND_KEY_ALIAS') ?: (project.findProperty('hubendKeyAlias')?.toString())
+def hubendKeyPassword = System.getenv('HUBEND_KEY_PASSWORD') ?: (project.findProperty('hubendKeyPassword')?.toString())
+def hubendReleaseSigning = hubendKeystorePath != null && file(hubendKeystorePath).isFile() &&
+        hubendKeystorePassword != null && hubendKeyAlias != null && hubendKeyPassword != null
+
 // HubEnd — aplicação Android: shell Capacitor (interface HubEnd) + ponte para os motores HubOps.
 android {
     namespace "dev.hubend.app"
@@ -11,8 +21,8 @@ android {
         applicationId "dev.hubend.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
-        versionName "0.1.3"
+        versionCode 5
+        versionName "0.1.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -29,12 +39,23 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (hubendReleaseSigning) {
+            release {
+                storeFile file(hubendKeystorePath)
+                storePassword hubendKeystorePassword
+                keyAlias hubendKeyAlias
+                keyPassword hubendKeyPassword
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
+            if (hubendReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
