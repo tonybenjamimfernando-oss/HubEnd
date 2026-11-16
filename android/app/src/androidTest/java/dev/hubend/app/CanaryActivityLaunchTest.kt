@@ -19,4 +19,11 @@ class CanaryActivityLaunchTest {
             assertEquals(Lifecycle.State.RESUMED, scenario.state)
         }
     }
+
+    @Test(timeout = 5_000)
+    fun capacitorBridgeWithoutWebViewReachesResumed() {
+        ActivityScenario.launch(CapacitorBridgeOnlyActivity::class.java).use { scenario ->
+            assertEquals(Lifecycle.State.RESUMED, scenario.state)
+        }
+    }
 }
