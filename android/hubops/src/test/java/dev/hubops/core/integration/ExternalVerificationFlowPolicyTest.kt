@@ -1,7 +1,9 @@
 package dev.hubops.core.integration
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.fail
 import org.junit.Test
+import java.io.File
 import java.nio.file.Files
 
 /** Regression tests: external verification may write evidence only across registered evidence flows. */
@@ -29,6 +31,7 @@ class ExternalVerificationFlowPolicyTest {
             } catch (_: IllegalArgumentException) {
                 // Expected: the registry is the authority for cross-engine evidence flows.
             }
+            assertFalse("Rejected evidence must not reach the ledger.", File(state, "integration-ledger.log").exists())
         } finally {
             state.deleteRecursively()
         }
