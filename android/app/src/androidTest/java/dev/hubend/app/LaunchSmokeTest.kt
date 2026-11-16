@@ -42,9 +42,10 @@ class LaunchSmokeTest {
         var originalMainThreadPolicy: StrictMode.ThreadPolicy? = null
 
         instrumentation.runOnMainSync {
-            originalMainThreadPolicy = StrictMode.getThreadPolicy()
+            val original = StrictMode.getThreadPolicy()
+            originalMainThreadPolicy = original
             StrictMode.setThreadPolicy(
-                StrictMode.ThreadPolicy.Builder(originalMainThreadPolicy)
+                StrictMode.ThreadPolicy.Builder(original)
                     .detectNetwork()
                     .penaltyLog()
                     .penaltyDeathOnNetwork()
