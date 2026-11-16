@@ -221,20 +221,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           working-directory: android
           script: |
-            set +e
-            mkdir -p ../build/device-diagnostics
-            chmod +x gradlew
-            ./gradlew --no-daemon :app:connectedDebugAndroidTest
-            APP_TEST_STATUS=$?
-            adb logcat -d -v threadtime | grep STRESS > ../build/device-diagnostics/stress-api33-logcat.txt 2>&1 || true
-            cat ../build/device-diagnostics/stress-api33-logcat.txt
-            adb logcat -d -v threadtime | grep SHELL_STRESS > ../build/device-diagnostics/shellrunner-stress-logcat.txt 2>&1 || true
-            cat ../build/device-diagnostics/shellrunner-stress-logcat.txt
-            ./gradlew --no-daemon :hubops:connectedDebugAndroidTest -PhubendDeviceTests
-            HUBOPS_TEST_STATUS=$?
-            adb logcat -d -v threadtime | grep SHELL_STRESS > ../build/device-diagnostics/shellrunner-stress-logcat.txt 2>&1 || true
-            cat ../build/device-diagnostics/shellrunner-stress-logcat.txt
-            exit $((APP_TEST_STATUS != 0 || HUBOPS_TEST_STATUS != 0))
+            bash ../tools/ci/device-diagnostics.sh
 
       - name: Relatórios dos testes em emulador
         if: always()
