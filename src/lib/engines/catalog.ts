@@ -110,7 +110,7 @@ export const ENGINES: EngineSpec[] = [
     limitations: [
       "O ledger local é um ficheiro de texto: não é inviolável nem assinado por linha.",
       "O EventBus nativo descarta eventos antigos (DROP_OLDEST): não é um registo durável.",
-      "recordExternalVerification não valida a política de fluxo quando chamado diretamente.",
+
     ],
   },
   {
