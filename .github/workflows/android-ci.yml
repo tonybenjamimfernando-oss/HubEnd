@@ -108,6 +108,60 @@ jobs:
             echo "- Interface: ${APP_URL:-ecrã local (sem APP_URL)}"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Preparar assinatura de release (opcional)
+        id: release_signing
+        shell: bash
+        env:
+          HUBEND_KEYSTORE_BASE64: ${{ secrets.HUBEND_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "${HUBEND_KEYSTORE_BASE64:-}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Sem HUBEND_KEYSTORE_BASE64: AAB/APK assinados nao gerados." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          mkdir -p build/signing
+          printf '%s' "$HUBEND_KEYSTORE_BASE64" | base64 -d > build/signing/hubend-release.keystore
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+
+      - name: Gerar AAB e APK assinados
+        if: steps.release_signing.outputs.configured == 'true'
+        working-directory: android
+        env:
+          HUBEND_KEYSTORE_PATH: ${{ github.workspace }}/build/signing/hubend-release.keystore
+          HUBEND_KEYSTORE_PASSWORD: ${{ secrets.HUBEND_KEYSTORE_PASSWORD }}
+          HUBEND_KEY_ALIAS: ${{ secrets.HUBEND_KEY_ALIAS }}
+          HUBEND_KEY_PASSWORD: ${{ secrets.HUBEND_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace :app:bundleRelease :app:assembleRelease
+          sha256sum app/build/outputs/bundle/release/app-release.aab app/build/outputs/apk/release/app-release.apk | tee "$GITHUB_WORKSPACE/build/release-sha256.txt"
+
+      - name: Verificar certificado de release
+        if: steps.release_signing.outputs.configured == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          BT=$(ls -d "${ANDROID_HOME}/build-tools/"* | sort -V | tail -1)
+          "${BT}/apksigner" verify --print-certs android/app/build/outputs/apk/release/app-release.apk | tee build/release-certs.txt
+
+      - name: Publicar AAB, APK assinado e certificado
+        if: steps.release_signing.outputs.configured == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hubend-release-signed-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/apk/release/app-release.apk
+            build/release-sha256.txt
+            build/release-certs.txt
+
+      - name: Remover a chave do runner
+        if: always()
+        shell: bash
+        run: rm -rf build/signing
+
       - name: Atestação de proveniência
         if: github.event_name != 'pull_request'
         uses: actions/attest-build-provenance@v2
