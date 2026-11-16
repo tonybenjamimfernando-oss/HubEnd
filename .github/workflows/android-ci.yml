@@ -231,11 +231,21 @@ jobs:
               adb shell dumpsys activity activities > ../build/device-diagnostics/activity-state.txt 2>&1 || true
               adb shell 'dumpsys activity processes | grep -A 20 -i hubend' > ../build/device-diagnostics/hubend-process-state.txt 2>&1 || true
               adb shell dumpsys meminfo dev.hubend.app > ../build/device-diagnostics/hubend-meminfo.txt 2>&1 || true
-              adb shell 'cat /proc/meminfo | head -n 30' > ../build/device-diagnostics/proc-meminfo-after.txt 2>&1 || true
+              adb shell 'cat /proc/meminfo' > ../build/device-diagnostics/meminfo-after.txt 2>&1 || true
+              adb shell dmesg | tail -200 > ../build/device-diagnostics/dmesg-tail.txt 2>&1 || true
               find app/build/outputs/androidTest-results/connected -type f -print > ../build/device-diagnostics/android-test-result-files.txt 2>&1 || true
+              echo "=== CONTROL_CRASH_MARKER_7F3A capture verification ==="
+              while IFS= read -r file; do
+                if grep -aFq 'CONTROL_CRASH_MARKER_7F3A' "$file"; then
+                  echo "FOUND: $file"
+                else
+                  echo "NOT_FOUND: $file"
+                fi
+              done < <(find ../build/device-diagnostics app/build/outputs/androidTest-results/connected app/build/reports/androidTests -type f 2>/dev/null | sort)
+              echo "=== END CONTROL_CRASH_MARKER_7F3A verification ==="
               find hubops/build/outputs/androidTest-results/connected -type f -print > ../build/device-diagnostics/hubops-android-test-result-files.txt 2>&1 || true
             }
-            adb shell 'cat /proc/meminfo | head -n 30' > ../build/device-diagnostics/proc-meminfo-before.txt 2>&1 || true
+            adb shell 'cat /proc/meminfo' > ../build/device-diagnostics/meminfo-before.txt 2>&1 || true
             trap capture_diagnostics EXIT
             chmod +x gradlew
             ./gradlew --no-daemon --info :app:connectedDebugAndroidTest
