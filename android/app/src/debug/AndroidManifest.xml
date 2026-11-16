@@ -5,5 +5,9 @@
             android:name=".CanaryActivity"
             android:exported="false"
             android:theme="@style/AppTheme.NoActionBarLaunch" />
+        <activity
+            android:name=".CapacitorBridgeOnlyActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBarLaunch" />
     </application>
 </manifest>
