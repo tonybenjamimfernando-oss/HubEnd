@@ -15,24 +15,29 @@ import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 
 /**
- * Ponte Capacitor "HubEndEngines": expõe à interface HubEnd os motores HubOps reais.
+ * Ponte Capacitor "HubEndEngines": expoe a interface HubEnd os motores HubOps reais.
  *
  * Regras:
  *  - Todo o trabalho corre num executor dedicado (nunca na thread da interface).
- *  - O ledger de integração é apenas LIDO aqui; mutações entre motores continuam a passar
- *    pelo HubOpsOrchestrator com proveniência, impacto e validação (consola nativa).
- *  - O terminal local (ShellRunner) e os trabalhos Termux NÃO são expostos à WebView:
- *    a interface pode carregar conteúdo remoto (APP_URL) e não deve obter execução de comandos.
- *    O terminal continua disponível na consola nativa HubOps.
- *  - Erros são devolvidos como rejeições explícitas, nunca como sucesso vazio.
+ *  - O ledger de integracao e apenas LIDO aqui; mutacoes entre motores continuam a passar
+ *    pelo HubOpsOrchestrator com proveniencia, impacto e validacao (consola nativa).
+ *  - O terminal local (ShellRunner) e os trabalhos Termux NAO sao expostos a WebView:
+ *    a interface pode carregar conteudo remoto (APP_URL) e nao deve obter execucao de comandos.
+ *    O terminal continua disponivel na consola nativa HubOps.
+ *  - Erros sao devolvidos como rejeicoes explicitas, nunca como sucesso vazio.
+ *  - Ciclo de vida (AR-01): todas as respostas passam pela BridgeLifecycleGate. Depois de
+ *    handleOnDestroy nenhum resultado e entregue, as chamadas pendentes sao rejeitadas com
+ *    UNAVAILABLE e o fecho e idempotente.
  */
 @CapacitorPlugin(name = "HubEndEngines")
 class HubEndEnginesPlugin : Plugin() {
     private val executor: ExecutorService = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "hubend-bridge").apply { isDaemon = true }
     }
+    private val lifecycle = BridgeLifecycleGate<PluginCall>()
     private val stateDir: File get() = File(context.filesDir, "hubops-integration")
 
     @PluginMethod
@@ -72,31 +77,68 @@ class HubEndEnginesPlugin : Plugin() {
 
     @PluginMethod
     fun openNativeConsole(call: PluginCall) {
+        if (!lifecycle.track(call)) {
+            rejectUnavailable(call)
+            return
+        }
         val host = activity
         if (host == null) {
-            call.reject("Atividade indisponível.")
+            lifecycle.complete(call)
+            call.reject("Atividade indisponivel.")
             return
         }
         host.runOnUiThread {
-            host.startActivity(Intent(host, dev.hubops.ui.MainActivity::class.java))
-            call.resolve(JSObject().put("opened", true))
+            lifecycle.deliver(call) { target ->
+                host.startActivity(Intent(host, dev.hubops.ui.MainActivity::class.java))
+                target.resolve(JSObject().put("opened", true))
+            }
         }
     }
 
     override fun handleOnDestroy() {
-        executor.shutdownNow()
+        if (lifecycle.state() != BridgeLifecycleGate.State.DESTROYED) {
+            // Rejeita o que ficou pendente antes de desligar o executor: nenhuma promessa JavaScript
+            // fica suspensa e nenhum callback tardio chega a uma WebView ja destruida.
+            lifecycle.beginClosing().forEach { pending ->
+                runCatching { pending.reject("Atividade encerrada.", "UNAVAILABLE") }
+            }
+            executor.shutdownNow()
+            lifecycle.seal()
+        }
         super.handleOnDestroy()
     }
 
     private fun respond(call: PluginCall, work: () -> JSONObject) {
-        executor.execute {
-            try {
-                call.resolve(JSObject.fromJSONObject(work()))
-            } catch (e: IllegalArgumentException) {
-                call.reject(e.message ?: "Pedido inválido.", "INVALID_ARGUMENT")
-            } catch (e: Exception) {
-                call.reject(e.message ?: e.javaClass.simpleName, "ENGINE_ERROR", e)
-            }
+        if (!lifecycle.track(call)) {
+            rejectUnavailable(call)
+            return
         }
+        val accepted = try {
+            executor.execute {
+                try {
+                    val payload = work()
+                    lifecycle.deliver(call) { target -> target.resolve(JSObject.fromJSONObject(payload)) }
+                } catch (invalid: IllegalArgumentException) {
+                    lifecycle.deliver(call) { target ->
+                        target.reject(invalid.message ?: "Pedido invalido.", "INVALID_ARGUMENT")
+                    }
+                } catch (error: Exception) {
+                    lifecycle.deliver(call) { target ->
+                        target.reject(error.message ?: error.javaClass.simpleName, "ENGINE_ERROR", error)
+                    }
+                }
+            }
+            true
+        } catch (rejected: RejectedExecutionException) {
+            false
+        }
+        if (!accepted) {
+            lifecycle.complete(call)
+            rejectUnavailable(call)
+        }
+    }
+
+    private fun rejectUnavailable(call: PluginCall) {
+        runCatching { call.reject("Ponte encerrada.", "UNAVAILABLE") }
     }
 }
