@@ -36,6 +36,19 @@ class ShellRunnerTest {
     }
 
     @Test
+    fun output_isTruncatedTwentyTimes() {
+        repeat(20) { i ->
+            val r = runner(max = 100).run("yes x | head -c 5000")
+            println("SHELL_STRESS iteration_$i: truncated=${r.truncated}, outputLength=${r.output.length}, exitCode=${r.exitCode}, timedOut=${r.timedOut}")
+            assertTrue(
+                "iteration_$i: truncated=${r.truncated}, outputLength=${r.output.length}, exitCode=${r.exitCode}, timedOut=${r.timedOut}",
+                r.truncated,
+            )
+            assertTrue("iteration_$i: output length ${r.output.length} exceeds 100", r.output.length <= 100)
+        }
+    }
+
+    @Test
     fun commandWithLargeOutputIsCapped() {
         val result = runner(max = 100).run("yes z | head -c 10000")
         assertTrue(result.output.toByteArray(Charsets.UTF_8).size <= 100)
