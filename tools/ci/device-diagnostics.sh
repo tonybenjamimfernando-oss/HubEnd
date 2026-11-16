@@ -12,7 +12,8 @@ snapshot() {
   local status="$2"
   {
     echo "exit_code=$status"
-    adb root
+    # Sem `adb root`: reiniciar o adbd no emulador derruba o system_server (DeadSystemException)
+    # e o diagnostico nao pode influenciar o resultado dos testes.
     adb wait-for-device
     adb shell cat /proc/meminfo
     adb logcat -b crash -d -v threadtime
@@ -27,8 +28,7 @@ snapshot() {
   adb shell dumpsys activity activities > "$DIAG_DIR/activity-state-$name.txt" 2>&1 || true
   adb shell dumpsys activity processes 2>/dev/null | grep -A 20 -i hubend > "$DIAG_DIR/hubend-processes-$name.txt" 2>&1 || true
   adb shell dmesg 2>/dev/null | tail -200 > "$DIAG_DIR/dmesg-$name.txt" 2>&1 || true
-  adb root > "$DIAG_DIR/adb-root-$name.txt" 2>&1 || true
-  printf 'ADB_ROOT_STATUS(%s): %s\n' "$name" "$(tr '\n' ' ' < "$DIAG_DIR/adb-root-$name.txt" | cut -c1-160)"
+  printf 'SNAPSHOT(%s): concluido sem adb root\n' "$name" > "$DIAG_DIR/adb-root-$name.txt"
 }
 
 finish() {
