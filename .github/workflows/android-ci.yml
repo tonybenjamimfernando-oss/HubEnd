@@ -124,15 +124,24 @@ jobs:
           mkdir -p build/signing
           KS=build/signing/hubend-release.keystore
           printf '%s' "$HUBEND_KEYSTORE_BASE64" | base64 -d > "$KS"
-          if ! keytool -list -keystore "$KS" -storepass "$HUBEND_KEYSTORE_PASSWORD" >/dev/null 2>&1; then
+          LISTA=$(keytool -list -keystore "$KS" -storepass "$HUBEND_KEYSTORE_PASSWORD" 2>/dev/null) || {
             echo "configured=false" >> "$GITHUB_OUTPUT"
             echo "HUBEND_KEYSTORE_PASSWORD nao abre o keystore: AAB/APK assinados nao gerados." >> "$GITHUB_STEP_SUMMARY"
             exit 0
+          }
+          ALIASES=$(printf '%s\n' "$LISTA" | sed -n -e 's/^Alias name: *//p' \\
+            -e 's/^\\([^,]*\\),.*PrivateKeyEntry.*/\\1/p' | tr -d ' ')
+          ALIAS=""
+          if [ -n "${HUBEND_KEY_ALIAS:-}" ] && printf '%s\n' "$ALIASES" | grep -qxF "$HUBEND_KEY_ALIAS"; then
+            ALIAS="$HUBEND_KEY_ALIAS"
           fi
-          ALIAS="${HUBEND_KEY_ALIAS:-}"
-          if [ -z "$ALIAS" ] || ! keytool -list -keystore "$KS" -storepass "$HUBEND_KEYSTORE_PASSWORD" -alias "$ALIAS" >/dev/null 2>&1; then
-            ALIAS=$(keytool -list -keystore "$KS" -storepass "$HUBEND_KEYSTORE_PASSWORD" 2>/dev/null \
-              | awk -F, '/PrivateKeyEntry/ {gsub(/ /,"",$1); print $1; exit}')
+          if [ -z "$ALIAS" ]; then
+            for candidato in $ALIASES; do
+              if printf '%s\n' "$LISTA" | grep -A3 -F "Alias name: $candidato" | grep -q 'PrivateKeyEntry'; then
+                ALIAS="$candidato"
+                break
+              fi
+            done
           fi
           if [ -z "$ALIAS" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
