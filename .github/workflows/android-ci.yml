@@ -114,7 +114,7 @@ jobs:
         env:
           HUBEND_KEYSTORE_BASE64: ${{ secrets.HUBEND_KEYSTORE_BASE64 }}
           HUBEND_KEYSTORE_PASSWORD: ${{ secrets.HUBEND_KEYSTORE_PASSWORD }}
-          HUBEND_KEY_ALIAS: ${{ steps.release_signing.outputs.alias }}
+          HUBEND_KEY_ALIAS: ${{ secrets.HUBEND_KEY_ALIAS }}
         run: |
           if [ -z "${HUBEND_KEYSTORE_BASE64:-}" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
@@ -136,7 +136,7 @@ jobs:
           fi
           if [ -z "$ALIAS" ]; then
             for candidato in $ALIASES; do
-              if printf '%s\n' "$LISTA" | grep -A3 -F "Alias name: $candidato" | grep -q "PrivateKeyEntry"; then
+              if keytool -list -keystore "$KS" -storepass "$HUBEND_KEYSTORE_PASSWORD" -alias "$candidato" 2>/dev/null | grep -q "PrivateKeyEntry"; then
                 ALIAS="$candidato"
                 break
               fi
@@ -156,7 +156,7 @@ jobs:
         env:
           HUBEND_KEYSTORE_PATH: ${{ github.workspace }}/build/signing/hubend-release.keystore
           HUBEND_KEYSTORE_PASSWORD: ${{ secrets.HUBEND_KEYSTORE_PASSWORD }}
-          HUBEND_KEY_ALIAS: ${{ secrets.HUBEND_KEY_ALIAS }}
+          HUBEND_KEY_ALIAS: ${{ steps.release_signing.outputs.alias }}
           HUBEND_KEY_PASSWORD: ${{ secrets.HUBEND_KEY_PASSWORD }}
         run: |
           set -euo pipefail
