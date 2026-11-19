@@ -30,6 +30,23 @@
 
         </activity>
 
+        <!-- HubEnd: entrada própria para a consola nativa HubOps (Terminal, Despertar, Espelhar,
+             Omega, GitHub, WordPress, Feed). Com APP_URL definido a WebView abria a interface web e
+             a consola nativa ficava inacessível; esta alias garante que as ferramentas estão no APK
+             e abrem com um toque. -->
+        <activity-alias
+            android:name=".HubOpsConsole"
+            android:targetActivity="dev.hubops.ui.MainActivity"
+            android:label="HubOps"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
