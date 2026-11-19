@@ -113,6 +113,8 @@ jobs:
         shell: bash
         env:
           HUBEND_KEYSTORE_BASE64: ${{ secrets.HUBEND_KEYSTORE_BASE64 }}
+          HUBEND_KEYSTORE_PASSWORD: ${{ secrets.HUBEND_KEYSTORE_PASSWORD }}
+          HUBEND_KEY_ALIAS: ${{ steps.release_signing.outputs.alias }}
         run: |
           if [ -z "${HUBEND_KEYSTORE_BASE64:-}" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
@@ -120,8 +122,26 @@ jobs:
             exit 0
           fi
           mkdir -p build/signing
-          printf '%s' "$HUBEND_KEYSTORE_BASE64" | base64 -d > build/signing/hubend-release.keystore
+          KS=build/signing/hubend-release.keystore
+          printf '%s' "$HUBEND_KEYSTORE_BASE64" | base64 -d > "$KS"
+          if ! keytool -list -keystore "$KS" -storepass "$HUBEND_KEYSTORE_PASSWORD" >/dev/null 2>&1; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "HUBEND_KEYSTORE_PASSWORD nao abre o keystore: AAB/APK assinados nao gerados." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          ALIAS="${HUBEND_KEY_ALIAS:-}"
+          if [ -z "$ALIAS" ] || ! keytool -list -keystore "$KS" -storepass "$HUBEND_KEYSTORE_PASSWORD" -alias "$ALIAS" >/dev/null 2>&1; then
+            ALIAS=$(keytool -list -keystore "$KS" -storepass "$HUBEND_KEYSTORE_PASSWORD" 2>/dev/null \
+              | awk -F, '/PrivateKeyEntry/ {gsub(/ /,"",$1); print $1; exit}')
+          fi
+          if [ -z "$ALIAS" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Keystore sem chave privada utilizavel: AAB/APK assinados nao gerados." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "alias=$ALIAS" >> "$GITHUB_OUTPUT"
           echo "configured=true" >> "$GITHUB_OUTPUT"
+          echo "Assinatura de release com o alias \`$ALIAS\`." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Gerar AAB e APK assinados
         if: steps.release_signing.outputs.configured == 'true'
